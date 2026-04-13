@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MindAR Test - Working Version</title>
+    <title>MindAR Simple Test - Fixed</title>
 
-    <!-- Import map for modern ES modules -->
+    <!-- Proper import map that fixes "three/addons" errors -->
     <script type="importmap">
     {
         "imports": {
             "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
             "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
         }
     }
@@ -50,14 +51,14 @@
             try {
                 const mindarThree = new MindARThree({
                     container: document.body,
-                    imageTargetSrc: 'https://morneydeetlefs.github.io/3dtest/my-anchor.mind',   // ← change this for GitHub
+                    imageTargetSrc: './my-anchor.mind',   // ← local test
                     filterMinCF: 0.001,
                     filterBeta: 100
                 });
 
                 const { renderer, scene, camera } = mindarThree;
 
-                // Simple 3D box
+                // Simple 3D box pinned to the anchor
                 const geometry = new THREE.BoxGeometry(1, 1, 1);
                 const material = new THREE.MeshPhongMaterial({ 
                     color: 0x00ff88, 
@@ -75,6 +76,7 @@
                 dirLight.position.set(5, 10, 7);
                 scene.add(dirLight);
 
+                // Status feedback
                 anchor.onTargetFound = () => {
                     status.textContent = "✅ Anchor detected! Object pinned.";
                 };
@@ -91,7 +93,7 @@
 
             } catch (err) {
                 console.error(err);
-                status.textContent = "Error: " + err.message;
+                status.textContent = "Failed to start: " + err.message;
             }
         });
     </script>
