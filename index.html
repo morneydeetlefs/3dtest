@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MindAR Test - Simple .mind Anchor</title>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-three.prod.js"></script>
+    <title>MindAR Simple Test - Android Chrome</title>
+    <!-- Correct MindAR + Three.js bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <style>
         body { margin:0; overflow:hidden; background:#000; font-family:system-ui; }
@@ -24,7 +25,7 @@
 </head>
 <body>
     <button id="startBtn">Start AR Camera</button>
-    <div id="status">Point your camera at the printed anchor image</div>
+    <div id="status">Point camera at your anchor image</div>
 
     <script>
         const startBtn = document.getElementById('startBtn');
@@ -33,49 +34,56 @@
         startBtn.addEventListener('click', async () => {
             startBtn.style.display = 'none';
             status.style.display = 'block';
-            status.textContent = "📷 Point camera at your anchor image";
+            status.textContent = "📷 Point camera at your printed anchor";
 
-            const mindarThree = new window.MINDAR.IMAGE.MindARThree({
-                container: document.body,
-                imageTargetSrc: 'https://morneydeetlefs.github.io/3dtest/my-anchor.mind',
-                filterMinCF: 0.001,
-                filterBeta: 100
-            });
+            try {
+                // Correct constructor usage for the 1.2.5 bundle
+                const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+                    container: document.body,
+                    imageTargetSrc: 'https://morneydeetlefs.github.io/3dtest/my-anchor.mind',   // ← your local .mind file
+                    filterMinCF: 0.001,
+                    filterBeta: 100
+                });
 
-            const { renderer, scene, camera } = mindarThree;
+                const { renderer, scene, camera } = mindarThree;
 
-            // Simple 3D object (easy to replace later)
-            const geometry = new THREE.BoxGeometry(1, 1, 1);
-            const material = new THREE.MeshPhongMaterial({ 
-                color: 0x00ff88, 
-                shininess: 100 
-            });
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(0, 0.5, 0);
+                // Simple glowing box pinned to the anchor
+                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: 0x00ff88, 
+                    shininess: 100 
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(0, 0.5, 0);
 
-            const anchor = mindarThree.addAnchor(0);
-            anchor.group.add(mesh);
+                const anchor = mindarThree.addAnchor(0);
+                anchor.group.add(mesh);
 
-            // Lighting for better 3D look
-            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(5, 10, 7);
-            scene.add(dirLight);
+                // Lighting
+                scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(5, 10, 7);
+                scene.add(dirLight);
 
-            // Feedback when the anchor is detected
-            anchor.onTargetFound = () => {
-                status.textContent = "✅ Anchor detected! 3D object pinned.";
-            };
-            anchor.onTargetLost = () => {
-                status.textContent = "Target lost — point camera at the image again";
-            };
+                // Nice feedback
+                anchor.onTargetFound = () => {
+                    status.textContent = "✅ Anchor found! Object pinned in real world.";
+                };
+                anchor.onTargetLost = () => {
+                    status.textContent = "Target lost — point at the image again";
+                };
 
-            await mindarThree.start();
+                await mindarThree.start();
 
-            renderer.setAnimationLoop(() => {
-                mesh.rotation.y += 0.012;   // gentle rotation
-                renderer.render(scene, camera);
-            });
+                renderer.setAnimationLoop(() => {
+                    mesh.rotation.y += 0.012;
+                    renderer.render(scene, camera);
+                });
+
+            } catch (err) {
+                console.error(err);
+                status.textContent = "Error starting AR: " + err.message;
+            }
         });
     </script>
 </body>
