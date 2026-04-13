@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>WebXR AR — Pin Objects to Real World</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        body { margin:0; overflow:hidden; background:#000; }
+        #startBtn {
+            position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+            z-index:100; padding:20px 40px; font-size:22px;
+            background:rgba(0,255,136,0.95); color:#000; border:none;
+            border-radius:50px; box-shadow:0 10px 30px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <button id="startBtn">Start AR — Place Objects in Real World</button>
+
+    <script>
+        let scene, camera, renderer;
+        let currentObject;
+        const startBtn = document.getElementById('startBtn');
+
+        startBtn.addEventListener('click', async () => {
+            startBtn.style.display = 'none';
+
+            if (!navigator.xr) return alert("WebXR not supported on this device/browser");
+
+            const session = await navigator.xr.requestSession('immersive-ar', {
+                requiredFeatures: ['hit-test', 'plane-detection'],
+                optionalFeatures: ['local-floor']
+            });
+
+            const { renderer: xrRenderer, scene: xrScene, camera: xrCamera } = await XRSession.createSessionWithThree(session); // simplified helper pattern
+
+            // Full basic setup (expandable)
+            scene = new THREE.Scene();
+            camera = xrCamera;
+            renderer = xrRenderer;
+
+            // Simple lighting that matches real world
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            // Your virtual object (3D box or load GLTF)
+            const geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            const material = new THREE.MeshPhongMaterial({ color: 0x00ff88, shininess: 80 });
+            currentObject = new THREE.Mesh(geometry, material);
+            scene.add(currentObject);
+
+            // Hit-test for placing on real surfaces
+            let hitTestSource = null;
+            session.requestReferenceSpace('viewer').then(refSpace => {
+                session.requestHitTestSource({ space: refSpace }).then(source => {
+                    hitTestSource = source;
+                });
+            });
+
+            // Animation + placement loop
+            renderer.setAnimationLoop((timestamp, frame) => {
+                if (frame && hitTestSource) {
+                    const hitTestResults = frame.getHitTestResults(hitTestSource);
+                    if (hitTestResults.length > 0) {
+                        const pose = hitTestResults[0].getPose(refSpace);
+                        if (pose) {
+                            currentObject.position.setFromMatrixPosition(pose.transform.matrix);
+                            currentObject.quaternion.setFromRotationMatrix(pose.transform.matrix);
+                            // Optional: auto-place on first detection or add tap-to-place
+                        }
+                    }
+                }
+                renderer.render(scene, camera);
+            });
+
+            // Optional: add more objects or touch controls for placement
+        });
+    </script>
+</body>
+</html>
