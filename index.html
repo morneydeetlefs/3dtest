@@ -3,10 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MindAR Simple Test - Android Chrome</title>
-    <!-- Correct MindAR + Three.js bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <title>MindAR Test - Working Version</title>
+
+    <!-- Import map for modern ES modules -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+        }
+    }
+    </script>
+
     <style>
         body { margin:0; overflow:hidden; background:#000; font-family:system-ui; }
         #startBtn {
@@ -27,7 +35,10 @@
     <button id="startBtn">Start AR Camera</button>
     <div id="status">Point camera at your anchor image</div>
 
-    <script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { MindARThree } from 'mindar-image-three';
+
         const startBtn = document.getElementById('startBtn');
         const status = document.getElementById('status');
 
@@ -37,17 +48,16 @@
             status.textContent = "📷 Point camera at your printed anchor";
 
             try {
-                // Correct constructor usage for the 1.2.5 bundle
-                const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+                const mindarThree = new MindARThree({
                     container: document.body,
-                    imageTargetSrc: 'https://morneydeetlefs.github.io/3dtest/my-anchor.mind',   // ← your local .mind file
+                    imageTargetSrc: 'https://morneydeetlefs.github.io/3dtest/my-anchor.mind',   // ← change this for GitHub
                     filterMinCF: 0.001,
                     filterBeta: 100
                 });
 
                 const { renderer, scene, camera } = mindarThree;
 
-                // Simple glowing box pinned to the anchor
+                // Simple 3D box
                 const geometry = new THREE.BoxGeometry(1, 1, 1);
                 const material = new THREE.MeshPhongMaterial({ 
                     color: 0x00ff88, 
@@ -65,9 +75,8 @@
                 dirLight.position.set(5, 10, 7);
                 scene.add(dirLight);
 
-                // Nice feedback
                 anchor.onTargetFound = () => {
-                    status.textContent = "✅ Anchor found! Object pinned in real world.";
+                    status.textContent = "✅ Anchor detected! Object pinned.";
                 };
                 anchor.onTargetLost = () => {
                     status.textContent = "Target lost — point at the image again";
@@ -82,7 +91,7 @@
 
             } catch (err) {
                 console.error(err);
-                status.textContent = "Error starting AR: " + err.message;
+                status.textContent = "Error: " + err.message;
             }
         });
     </script>
